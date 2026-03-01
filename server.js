@@ -20,15 +20,20 @@ const SHOW_REASONING = true; // Set to true to show reasoning with <think> tags
 // 🔥 THINKING MODE TOGGLE - Enables thinking for specific models that support it
 const ENABLE_THINKING_MODE = false; // Set to true to enable chat_template_kwargs thinking parameter
 
-// Model mapping (adjust based on available NIM models)
+// Optional: friendly aliases → real NIM model IDs
+// JanitorAI / Chub.ai can also just use the native IDs directly (recommended).
 const MODEL_MAPPING = {
-  'gpt-3.5-turbo': 'nvidia/llama-3.1-nemotron-ultra-253b-v1',
-  'gpt-4': 'qwen/qwen3-coder-480b-a35b-instruct',
-  'gpt-4-turbo': 'moonshotai/kimi-k2-instruct-0905',
-  'gpt-4o': 'deepseek-ai/deepseek-v3.1',
-  'claude-3-opus': 'openai/gpt-oss-120b',
-  'claude-3-sonnet': 'openai/gpt-oss-20b',
-  'gemini-pro': 'qwen/qwen3-next-80b-a3b-thinking' 
+  // Native NIM IDs (preferred for JanitorAI/Chub.ai)
+  'moonshotai/kimi-k2.5': 'moonshotai/kimi-k2.5',                         // Kimi 2.5 [web:1][web:10][web:11]
+  'moonshotai/kimi-k2-instruct-0905': 'moonshotai/kimi-k2-instruct-0905', // Kimi K2 Instruct 0905 [web:34][web:40]
+  'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',                     // MiniMax M2.5 [web:2][web:5]
+  'minimaxai/minimax-m2.1': 'minimaxai/minimax-m2.1',                     // MiniMax M2.1 [web:41]
+  'deepseek-ai/deepseek-v3.2': 'deepseek-ai/deepseek-v3_2',               // DeepSeek V3.2 (note underscore in NIM ID) [web:3][web:6][web:9]
+  'deepseek-ai/deepseek-v3.1-terminus': 'deepseek-ai/deepseek-v3_1-terminus', // DeepSeek V3.1 Terminus [web:30][web:32]
+  'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',                     // Qwen 3.5 397B [web:7]
+  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct', // Qwen3 Coder 480B [web:7]
+  'openai/gpt-oss-120b': 'openai/gpt-oss-120b',                           // GPT-OSS-120B [web:7]
+  'z-ai/glm4_7': 'z-ai/glm4_7'                                            // GLM-4.7 [web:39][web:42]
 };
 
 // Health check endpoint
