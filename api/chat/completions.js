@@ -1,70 +1,53 @@
-export const config = { runtime: 'edge' };
-
 const NIM_BASE = 'https://integrate.api.nvidia.com/v1';
 
-export default async function handler(req) {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders(),
-    });
-  }
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
-  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const apiKey = req.headers.get('authorization')?.replace('Bearer ', '') || process.env.NIM_API_KEY;
-  if (!apiKey) return json({ error: 'Missing API key' }, 401);
+  const apiKey = (req.headers['authorization'] || '').replace('Bearer ', '').trim() || process.env.NIM_API_KEY;
+  if (!apiKey) return res.status(401).json({ error: 'Missing API key' });
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
-  }
-
-  // Enforce: thinking OFF, reasoning ON
+  const body = req.body || {};
   body.thinking = false;
   if (body.reasoning === undefined) body.reasoning = true;
 
-  const nimRes = await fetch(`${NIM_BASE}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
+  const isStream = !!body.stream;
 
-  const contentType = nimRes.headers.get('content-type') || '';
-
-  if (body.stream) {
-    return new Response(nimRes.body, {
-      status: nimRes.status,
+  let nimRes;
+  try {
+    nimRes = await fetch(`${NIM_BASE}/chat/completions`, {
+      method: 'POST',
       headers: {
-        ...corsHeaders(),
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
       },
+      body: JSON.stringify(body),
     });
+  } catch (err) {
+    console.error('NIM fetch error:', err);
+    return res.status(502).json({ error: 'Failed to reach NIM API', detail: err.message });
+  }
+
+  if (isStream) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.status(nimRes.status);
+    const reader = nimRes.body.getReader();
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) { res.end(); break; }
+        res.write(Buffer.from(value));
+      }
+    };
+    return pump().catch(() => res.end());
   }
 
   const data = await nimRes.json();
-  return json(data, nimRes.status);
-}
-
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
-}
-
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
-  });
-}
+  return res.status(nimRes.status).json(data);
+};
