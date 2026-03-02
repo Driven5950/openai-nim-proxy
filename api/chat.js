@@ -71,6 +71,7 @@ module.exports = async function handler(req, res) {
 
       let buffer = '';
       let reasoningStarted = false;
+      let reasoningBuffer = '';
 
       response.data.on('data', (chunk) => {
         buffer += chunk.toString();
@@ -89,10 +90,23 @@ module.exports = async function handler(req, res) {
 
               if (SHOW_REASONING) {
                 let combined = '';
-                if (reasoning && !reasoningStarted) { combined = '<think>\n' + reasoning; reasoningStarted = true; }
-                else if (reasoning) { combined = reasoning; }
-                if (content && reasoningStarted) { combined += '</think>\n\n' + content; reasoningStarted = false; }
-                else if (content) { combined += content; }
+                if (reasoning && !reasoningStarted) {
+                  combined = '<think>\n' + reasoning;
+                  reasoningStarted = true;
+                  reasoningBuffer = reasoning;
+                } else if (reasoning) {
+                  combined = reasoning;
+                  reasoningBuffer += reasoning;
+                }
+                if (content && reasoningStarted) {
+                  // Strip reasoning from content if duplicated
+                  const cleanContent = content.replace(reasoningBuffer, '').trim();
+                  combined += '</think>\n\n' + cleanContent;
+                  reasoningStarted = false;
+                  reasoningBuffer = '';
+                } else if (content) {
+                  combined += content;
+                }
                 if (combined) data.choices[0].delta.content = combined;
               } else {
                 data.choices[0].delta.content = content || '';
@@ -113,9 +127,13 @@ module.exports = async function handler(req, res) {
       const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, { headers });
 
       const choices = response.data.choices.map(choice => {
+        let reasoning = choice.message?.reasoning_content || '';
         let content = choice.message?.content || '';
-        if (SHOW_REASONING && choice.message?.reasoning_content) {
-          content = '<think>\n' + choice.message.reasoning_content + '\n</think>\n\n' + content;
+        if (reasoning && content.includes(reasoning)) {
+          content = content.replace(reasoning, '').trim();
+        }
+        if (SHOW_REASONING && reasoning) {
+          content = '<think>\n' + reasoning + '\n</think>\n\n' + content;
         }
         return {
           index: choice.index,
