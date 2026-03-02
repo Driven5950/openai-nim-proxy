@@ -52,7 +52,7 @@ module.exports = async (req, res) => {
         const nimResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': req.headers.authorization,
+            'Authorization': (req.headers.authorization || '').startsWith('Bearer ') ? req.headers.authorization : '',
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
