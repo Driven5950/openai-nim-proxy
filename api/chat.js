@@ -89,25 +89,29 @@ module.exports = async function handler(req, res) {
               const content = data.choices[0].delta.content;
 
               if (SHOW_REASONING) {
-                let combined = '';
-                if (reasoning && !reasoningStarted) {
-                  combined = '<think>\n' + reasoning;
-                  reasoningStarted = true;
-                  reasoningBuffer = reasoning;
-                } else if (reasoning) {
-                  combined = reasoning;
-                  reasoningBuffer += reasoning;
+                // If content already has think tags embedded, pass through as-is
+                if (content && content.includes('<think>')) {
+                  data.choices[0].delta.content = content;
+                } else {
+                  let combined = '';
+                  if (reasoning && !reasoningStarted) {
+                    combined = '<think>\n' + reasoning;
+                    reasoningStarted = true;
+                    reasoningBuffer = reasoning;
+                  } else if (reasoning) {
+                    combined = reasoning;
+                    reasoningBuffer += reasoning;
+                  }
+                  if (content && reasoningStarted) {
+                    const cleanContent = content.replace(reasoningBuffer, '').trim();
+                    combined += '</think>\n\n' + cleanContent;
+                    reasoningStarted = false;
+                    reasoningBuffer = '';
+                  } else if (content) {
+                    combined += content;
+                  }
+                  if (combined) data.choices[0].delta.content = combined;
                 }
-                if (content && reasoningStarted) {
-                  // Strip reasoning from content if duplicated
-                  const cleanContent = content.replace(reasoningBuffer, '').trim();
-                  combined += '</think>\n\n' + cleanContent;
-                  reasoningStarted = false;
-                  reasoningBuffer = '';
-                } else if (content) {
-                  combined += content;
-                }
-                if (combined) data.choices[0].delta.content = combined;
               } else {
                 data.choices[0].delta.content = content || '';
               }
@@ -129,10 +133,10 @@ module.exports = async function handler(req, res) {
       const choices = response.data.choices.map(choice => {
         let reasoning = choice.message?.reasoning_content || '';
         let content = choice.message?.content || '';
-        if (reasoning && content.includes(reasoning)) {
-          content = content.replace(reasoning, '').trim();
-        }
-        if (SHOW_REASONING && reasoning) {
+        // If content already has think tags embedded, pass through as-is
+        if (content.includes('<think>')) {
+          // do nothing, already formatted
+        } else if (SHOW_REASONING && reasoning) {
           content = '<think>\n' + reasoning + '\n</think>\n\n' + content;
         }
         return {
