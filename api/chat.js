@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
