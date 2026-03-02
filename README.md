@@ -18,7 +18,7 @@ An OpenAI-compatible proxy for Nvidia NIM, deployed on Vercel.
 
 ## Usage in JanitorAI / Chub.ai
 
-- **Base URL:** `http://openai-nim-proxy-ruddy-six.vercel.app/v1`
+- **Base URL:** `https://openai-nim-proxy-ruddy-six.vercel.app/v1`
 - **API Key:** Your NIM API key (or leave as-is if using server-side env var)
 
 ## Behaviour
