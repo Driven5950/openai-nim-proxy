@@ -1,20 +1,28 @@
-// index.js (ROOT LEVEL)
-import { createEdgeRouter } from 'next-http-edge-runtime'; // or use standard handler
-// OR minimal proxy handler:
-export default async function handler(req) {
-  // Forward ALL traffic to your /api/index.js logic
-  const apiUrl = new URL(req.url, `http://${req.headers.host}`);
-  apiUrl.pathname = apiUrl.pathname.replace(/^\/api\/?/, '/api/') || '/api/';
-  
-  const response = await fetch(apiUrl.toString(), {
-    method: req.method,
-    headers: req.headers,
-    body: req.method !== 'GET' && req.method !== 'HEAD' ? await req.text() : undefined
-  });
-  
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers
-  });
+// index.js (PROJECT ROOT - same level as package.json)
+export default async function handler(req, res) {
+  try {
+    // Forward to /api/index.js logic or handle directly
+    if (req.url === '/health' || req.method === 'GET') {
+      return res.status(200).json({ status: 'ok' });
+    }
+    
+    if (req.method === 'POST' && req.url.includes('/chat/completions')) {
+      const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.NIM_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(req.body)
+      });
+      
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+    
+    res.status(404).json({ error: 'Endpoint not found' });
+  } catch (error) {
+    console.error('Handler error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 }
