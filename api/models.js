@@ -1,4 +1,14 @@
-const MODEL_MAPPING = {
+export default function handler(req, res) {
+
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  
+  const MODEL_MAPPING = {
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
   'z-ai/glm5': 'z-ai/glm5',
