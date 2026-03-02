@@ -1,8 +1,16 @@
 {
-  "builds": [
-    { "src": "index.js", "use": "@vercel/node" }
-  ],
+  "version": 2,
   "routes": [
-    { "src": "/(.*)", "dest": "/index.js" }
-  ]
+    {
+      "src": "/v1/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/",
+      "dest": "/index.js"
+    }
+  ],
+  "env": {
+    "NIM_API_KEY": "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"
+  }
 }

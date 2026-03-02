@@ -1,11 +1,13 @@
 {
   "name": "openai-nim-proxy",
   "version": "1.0.0",
-  "type": "commonjs",
+  "description": "NIM to OpenAI API proxy for JanitorAI and Chub.ai",
+  "main": "index.js",
   "engines": {
-    "node": "24.x"
+    "node": ">=18"
   },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  }
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {}
 }
