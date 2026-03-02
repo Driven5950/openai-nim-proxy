@@ -21,6 +21,11 @@ const MODEL_MAPPING = {
 };
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: { message: 'Method not allowed', type: 'invalid_request_error' } });
   }
@@ -28,7 +33,6 @@ export default async function handler(req, res) {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
 
-    // Resolve NIM model
     let nimModel = MODEL_MAPPING[model];
     if (!nimModel) {
       const lower = (model || '').toLowerCase();
