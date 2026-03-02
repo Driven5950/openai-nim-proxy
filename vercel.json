@@ -1,8 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api/v1/chat/completions", "destination": "/api.js" },
-    { "source": "/health", "destination": "/api.js" },
-    { "source": "/", "destination": "/api.js" },
-    { "source": "/(.*)", "destination": "/api.js" }
+    { "source": "/health", "destination": "/api/index.js" },
+    { "source": "/api/v1/chat/completions", "destination": "/api/index.js" },
+    { "source": "/", "destination": "/api/index.js" }
   ]
 }
