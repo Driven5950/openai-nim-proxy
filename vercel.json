@@ -1,23 +1,18 @@
 {
   "version": 2,
   "framework": null,
-  "rewrites": [
-    { "source": "/v1/chat/completions", "destination": "/api/chat/completions" },
-    { "source": "/v1/models",           "destination": "/api/models" }
+  "routes": [
+    { "src": "/v1/chat/completions", "dest": "/api/chat/completions" },
+    { "src": "/v1/models",           "dest": "/api/models" },
+    { "src": "/",                    "dest": "/index.js" }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin",  "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type,Authorization" }
-      ]
-    },
-    {
-      "source": "/",
-      "headers": [
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
       ]
     }
   ]
