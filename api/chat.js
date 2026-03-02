@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
-const SHOW_REASONING = true;
+const SHOW_REASONING = false;
 const ENABLE_THINKING_MODE = false;
 
 const MODEL_MAPPING = {
