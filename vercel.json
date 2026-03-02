@@ -1,15 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api.js"
-    }
+  "rewrites": [
+    { "source": "/api/v1/chat/completions", "destination": "/api.js" },
+    { "source": "/health", "destination": "/api.js" },
+    { "source": "/", "destination": "/api.js" },
+    { "source": "/(.*)", "destination": "/api.js" }
   ]
 }
