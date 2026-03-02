@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    }
+  ],
+  "routes": [
+    { "src": "/", "dest": "/api/health" },
+    { "src": "/health", "dest": "/api/health" },
+    { "src": "/v1/models", "dest": "/api/models" },
+    { "src": "/v1/chat/completions", "dest": "/api/chat" },
+    { "src": "/(.*)", "dest": "/api/catch" }
+  ]
+}
