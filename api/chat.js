@@ -29,6 +29,11 @@ const MODEL_MAPPING = {
 // Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
 function getThinkingKwargs(nimModel) {
 
+  // DeepSeek V4 — reasoning_effort is set separately, but thinking must also be enabled
+  if (nimModel.includes('deepseek-v4')) {
+    return { thinking: true };
+  }
+
   // GLM models
   if (nimModel.includes('glm5') || nimModel.includes('glm-5') || nimModel.includes('glm4.7') || nimModel.includes('glm-4.7')) {
     return { enable_thinking: true, clear_thinking: false };
