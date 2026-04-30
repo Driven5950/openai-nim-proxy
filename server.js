@@ -24,7 +24,7 @@ const ENABLE_THINKING_MODE = false; // Set to true to enable chat_template_kwarg
 const MODEL_MAPPING = {
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
-  'z-ai/glm5': 'z-ai/glm5',
+  'z-ai/glm-5.1': 'z-ai/glm-5.1',
   'minimaxai/minimax-m2.1': 'minimaxai/minimax-m2.1',
   'stepfun-ai/step-3.5-flash': 'stepfun-ai/step-3.5-flash',
   'moonshotai/kimi-k2.5': 'moonshotai/kimi-k2.5',
