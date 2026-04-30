@@ -88,6 +88,7 @@ module.exports = async function handler(req, res) {
       });
 
       let buffer = '';
+      let inReasoning = false;
 
       response.data.on('data', (chunk) => {
         buffer += chunk.toString();
@@ -102,12 +103,27 @@ module.exports = async function handler(req, res) {
             const data = JSON.parse(line.slice(6));
             if (data.choices?.[0]?.delta) {
               const reasoning = data.choices[0].delta.reasoning_content;
-              const content = data.choices[0].delta.content || '';
+              const content = data.choices[0].delta.content;
+
+              let output = '';
+
               if (reasoning) {
-                data.choices[0].delta.content = reasoning + content;
-              } else {
-                data.choices[0].delta.content = content;
+                if (!inReasoning) {
+                  output += '<think>';
+                  inReasoning = true;
+                }
+                output += reasoning;
               }
+
+              if (content !== null && content !== undefined && content !== '') {
+                if (inReasoning) {
+                  output += '</think>\n\n';
+                  inReasoning = false;
+                }
+                output += content;
+              }
+
+              data.choices[0].delta.content = output;
               delete data.choices[0].delta.reasoning_content;
             }
             res.write(`data: ${JSON.stringify(data)}\n\n`);
