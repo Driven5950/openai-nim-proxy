@@ -94,7 +94,7 @@ module.exports = async function handler(req, res) {
       temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
       stream: stream || false,
-      ...(isDeepSeekV4 && { reasoning_effort: 'max' }),
+      ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
       ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
 
