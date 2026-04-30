@@ -1,4 +1,5 @@
 const MODEL_MAPPING = {
+  // Existing models
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
   'z-ai/glm5': 'z-ai/glm5',
@@ -11,7 +12,14 @@ const MODEL_MAPPING = {
   'qwen/qwen3-next-80b-a3b-instruct': 'qwen/qwen3-next-80b-a3b-instruct',
   'mistralai/devstral-2-123b-instruct-2512': 'mistralai/devstral-2-123b-instruct-2512',
   'mistralai/mistral-large-3-675b-instruct-2512': 'mistralai/mistral-large-3-675b-instruct-2512',
-  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct'
+  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
+  // New models
+  'deepseek-ai/deepseek-v4-pro': 'deepseek-ai/deepseek-v4-pro',
+  'deepseek-ai/deepseek-v4-flash': 'deepseek-ai/deepseek-v4-flash',
+  'mistralai/mistral-medium-3.5-128b': 'mistralai/mistral-medium-3.5-128b',
+  'z-ai/glm-5.1': 'z-ai/glm-5.1',
+  'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
+  'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b'
 };
 
 module.exports = function handler(req, res) {
@@ -29,4 +37,3 @@ module.exports = function handler(req, res) {
 
   res.status(200).json({ object: 'list', data: models });
 }
-
