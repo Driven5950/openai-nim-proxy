@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
-const SHOW_REASONING = true;
+const SHOW_REASONING = false;
 const ENABLE_THINKING_MODE = false;
 
 // Models that require chat_template_kwargs to function at all on NVIDIA NIM
@@ -153,6 +153,7 @@ module.exports = async function handler(req, res) {
 
     } else {
       const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, { headers });
+      console.log('RAW RESPONSE:', JSON.stringify(response.data.choices[0].message));
 
       const choices = response.data.choices.map(choice => {
         let reasoning = choice.message?.reasoning_content || '';
@@ -186,6 +187,3 @@ module.exports = async function handler(req, res) {
     });
   }
 }
-
-const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, { headers });
-console.log('RAW RESPONSE:', JSON.stringify(response.data.choices[0].message));
