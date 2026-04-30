@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
-const ENABLE_THINKING_MODE = false;
+const ENABLE_THINKING_MODE = true;
 
 const DEEPSEEK_V4_MODELS = [
   'deepseek-ai/deepseek-v4-pro',
