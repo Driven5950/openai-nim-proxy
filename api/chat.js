@@ -32,7 +32,7 @@ function getThinkingKwargs(nimModel) {
   if (nimModel.includes('deepseek-v4')) return null;
 
   // GLM models
-  if (nimModel.includes('glm5') || nimModel.includes('glm4.7')) {
+  if (nimModel.includes('glm5') || nimModel.includes('glm-5') || nimModel.includes('glm4.7') || nimModel.includes('glm-4.7')) {
     return { enable_thinking: true, clear_thinking: false };
   }
 
