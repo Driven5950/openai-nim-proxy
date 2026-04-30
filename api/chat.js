@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
-const ENABLE_THINKING_MODE = false;
+const ENABLE_THINKING_MODE = true;
 
 // Models that require chat_template_kwargs to function at all on NVIDIA NIM
 const DEEPSEEK_V4_MODELS = [
@@ -67,15 +67,11 @@ module.exports = async function handler(req, res) {
       temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
       stream: stream || false,
-      ...(isDeepSeekV4 && {
-        chat_template_kwargs: {
-          enable_thinking: true,
-          thinking: 'think_max'
-        }
-      }),
-      ...(ENABLE_THINKING_MODE && !isDeepSeekV4 && {
-        extra_body: { chat_template_kwargs: { thinking: true } }
-      })
+      extra_body: isDeepSeekV4
+        ? { chat_template_kwargs: { enable_thinking: true, thinking: 'think_max' } }
+        : ENABLE_THINKING_MODE
+          ? { chat_template_kwargs: { thinking: true } }
+          : undefined
     };
 
     const headers = {
@@ -109,8 +105,6 @@ module.exports = async function handler(req, res) {
             if (data.choices?.[0]?.delta) {
               const reasoning = data.choices[0].delta.reasoning_content;
               const content = data.choices[0].delta.content || '';
-
-              // Pass through raw: if reasoning exists, prepend it to content
               if (reasoning) {
                 data.choices[0].delta.content = reasoning + content;
               } else {
@@ -131,7 +125,6 @@ module.exports = async function handler(req, res) {
     } else {
       const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, { headers });
 
-      // Pass through completely raw - whatever NVIDIA sends, Janitor gets
       const choices = response.data.choices.map(choice => {
         let content = choice.message?.content || '';
         const reasoning = choice.message?.reasoning_content || '';
