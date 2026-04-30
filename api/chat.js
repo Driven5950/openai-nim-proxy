@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
-const SHOW_REASONING = false;
+const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = false;
 
 // Models that require chat_template_kwargs to function at all on NVIDIA NIM
@@ -59,7 +59,6 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // DeepSeek V4 models require chat_template_kwargs to respond at all on NVIDIA NIM
     const isDeepSeekV4 = DEEPSEEK_V4_MODELS.includes(nimModel);
 
     const nimRequest = {
@@ -95,8 +94,6 @@ module.exports = async function handler(req, res) {
       });
 
       let buffer = '';
-      let reasoningStarted = false;
-      let reasoningBuffer = '';
 
       response.data.on('data', (chunk) => {
         buffer += chunk.toString();
@@ -111,33 +108,13 @@ module.exports = async function handler(req, res) {
             const data = JSON.parse(line.slice(6));
             if (data.choices?.[0]?.delta) {
               const reasoning = data.choices[0].delta.reasoning_content;
-              const content = data.choices[0].delta.content;
+              const content = data.choices[0].delta.content || '';
 
-              if (SHOW_REASONING) {
-                if (content && content.includes('<think>')) {
-                  data.choices[0].delta.content = content;
-                } else {
-                  let combined = '';
-                  if (reasoning && !reasoningStarted) {
-                    combined = '<think>\n' + reasoning;
-                    reasoningStarted = true;
-                    reasoningBuffer = reasoning;
-                  } else if (reasoning) {
-                    combined = reasoning;
-                    reasoningBuffer += reasoning;
-                  }
-                  if (content && reasoningStarted) {
-                    const cleanContent = content.replace(reasoningBuffer, '').trim();
-                    combined += '</think>\n\n' + cleanContent;
-                    reasoningStarted = false;
-                    reasoningBuffer = '';
-                  } else if (content) {
-                    combined += content;
-                  }
-                  if (combined) data.choices[0].delta.content = combined;
-                }
+              // Pass through raw: if reasoning exists, prepend it to content
+              if (reasoning) {
+                data.choices[0].delta.content = reasoning + content;
               } else {
-                data.choices[0].delta.content = content || '';
+                data.choices[0].delta.content = content;
               }
               delete data.choices[0].delta.reasoning_content;
             }
@@ -153,15 +130,13 @@ module.exports = async function handler(req, res) {
 
     } else {
       const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, { headers });
-      console.log('RAW RESPONSE:', JSON.stringify(response.data.choices[0].message));
 
+      // Pass through completely raw - whatever NVIDIA sends, Janitor gets
       const choices = response.data.choices.map(choice => {
-        let reasoning = choice.message?.reasoning_content || '';
         let content = choice.message?.content || '';
-        if (content.includes('<think>')) {
-          // already formatted, pass through
-        } else if (SHOW_REASONING && reasoning) {
-          content = '<think>\n' + reasoning + '\n</think>\n\n' + content;
+        const reasoning = choice.message?.reasoning_content || '';
+        if (reasoning) {
+          content = reasoning + '\n\n' + content;
         }
         return {
           index: choice.index,
@@ -179,7 +154,6 @@ module.exports = async function handler(req, res) {
         usage: response.data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
       });
     }
-
   } catch (error) {
     const status = error.response?.status || 500;
     res.status(status).json({
