@@ -4,7 +4,14 @@ const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = false;
 const ENABLE_THINKING_MODE = false;
 
+// Models that require chat_template_kwargs to function at all on NVIDIA NIM
+const DEEPSEEK_V4_MODELS = [
+  'deepseek-ai/deepseek-v4-pro',
+  'deepseek-ai/deepseek-v4-flash'
+];
+
 const MODEL_MAPPING = {
+  // Existing models
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
   'z-ai/glm5': 'z-ai/glm5',
@@ -17,7 +24,14 @@ const MODEL_MAPPING = {
   'qwen/qwen3-next-80b-a3b-instruct': 'qwen/qwen3-next-80b-a3b-instruct',
   'mistralai/devstral-2-123b-instruct-2512': 'mistralai/devstral-2-123b-instruct-2512',
   'mistralai/mistral-large-3-675b-instruct-2512': 'mistralai/mistral-large-3-675b-instruct-2512',
-  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct'
+  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
+  // New models
+  'deepseek-ai/deepseek-v4-pro': 'deepseek-ai/deepseek-v4-pro',
+  'deepseek-ai/deepseek-v4-flash': 'deepseek-ai/deepseek-v4-flash',
+  'mistralai/mistral-medium-3.5-128b': 'mistralai/mistral-medium-3.5-128b',
+  'z-ai/glm-5.1': 'z-ai/glm-5.1',
+  'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
+  'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b'
 };
 
 module.exports = async function handler(req, res) {
@@ -45,13 +59,24 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    // DeepSeek V4 models require chat_template_kwargs to respond at all on NVIDIA NIM
+    const isDeepSeekV4 = DEEPSEEK_V4_MODELS.includes(nimModel);
+
     const nimRequest = {
       model: nimModel,
       messages,
       temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
       stream: stream || false,
-      ...(ENABLE_THINKING_MODE && { extra_body: { chat_template_kwargs: { thinking: true } } })
+      ...(isDeepSeekV4 && {
+        chat_template_kwargs: {
+          enable_thinking: true,
+          thinking: 'think_max'
+        }
+      }),
+      ...(ENABLE_THINKING_MODE && !isDeepSeekV4 && {
+        extra_body: { chat_template_kwargs: { thinking: true } }
+      })
     };
 
     const headers = {
@@ -89,7 +114,6 @@ module.exports = async function handler(req, res) {
               const content = data.choices[0].delta.content;
 
               if (SHOW_REASONING) {
-                // If content already has think tags embedded, pass through as-is
                 if (content && content.includes('<think>')) {
                   data.choices[0].delta.content = content;
                 } else {
@@ -133,9 +157,8 @@ module.exports = async function handler(req, res) {
       const choices = response.data.choices.map(choice => {
         let reasoning = choice.message?.reasoning_content || '';
         let content = choice.message?.content || '';
-        // If content already has think tags embedded, pass through as-is
         if (content.includes('<think>')) {
-          // do nothing, already formatted
+          // already formatted, pass through
         } else if (SHOW_REASONING && reasoning) {
           content = '<think>\n' + reasoning + '\n</think>\n\n' + content;
         }
