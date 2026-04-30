@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
-const SHOW_REASONING = false;
+const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = false;
 
 // Models that require chat_template_kwargs to function at all on NVIDIA NIM
