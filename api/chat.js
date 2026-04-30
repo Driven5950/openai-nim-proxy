@@ -186,3 +186,6 @@ module.exports = async function handler(req, res) {
     });
   }
 }
+
+const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, { headers });
+console.log('RAW RESPONSE:', JSON.stringify(response.data.choices[0].message));
