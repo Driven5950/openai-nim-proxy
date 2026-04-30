@@ -4,11 +4,6 @@ const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = true;
 
-const DEEPSEEK_V4_MODELS = [
-  'deepseek-ai/deepseek-v4-pro',
-  'deepseek-ai/deepseek-v4-flash'
-];
-
 const MODEL_MAPPING = {
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
@@ -26,10 +21,41 @@ const MODEL_MAPPING = {
   'deepseek-ai/deepseek-v4-pro': 'deepseek-ai/deepseek-v4-pro',
   'deepseek-ai/deepseek-v4-flash': 'deepseek-ai/deepseek-v4-flash',
   'mistralai/mistral-medium-3.5-128b': 'mistralai/mistral-medium-3.5-128b',
-  'z-ai/glm-5.1': 'z-ai/glm-5.1',
+  'z-ai/glm5.1': 'z-ai/glm5.1',
   'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
   'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b'
 };
+
+// Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
+function getThinkingKwargs(nimModel) {
+  // DeepSeek V4 uses reasoning_effort instead
+  if (nimModel.includes('deepseek-v4')) return null;
+
+  // GLM models
+  if (nimModel.includes('glm5') || nimModel.includes('glm4.7')) {
+    return { enable_thinking: true, clear_thinking: false };
+  }
+
+  // Kimi models
+  if (nimModel.includes('kimi')) {
+    return { thinking: true };
+  }
+
+  // Qwen3 models
+  if (nimModel.includes('qwen3') || nimModel.includes('qwq')) {
+    return { enable_thinking: true };
+  }
+
+  // DeepSeek V3
+  if (nimModel.includes('deepseek-v3') || nimModel.includes('deepseek-r1')) {
+    return { thinking: true };
+  }
+
+  // MiniMax uses inline <think> tags, no kwargs needed
+  if (nimModel.includes('minimax')) return null;
+
+  return null;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -56,7 +82,8 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    const isDeepSeekV4 = DEEPSEEK_V4_MODELS.includes(nimModel);
+    const isDeepSeekV4 = nimModel.includes('deepseek-v4');
+    const thinkingKwargs = ENABLE_THINKING_MODE ? getThinkingKwargs(nimModel) : null;
 
     const nimRequest = {
       model: nimModel,
@@ -64,12 +91,8 @@ module.exports = async function handler(req, res) {
       temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
       stream: stream || false,
-      // DeepSeek V4 uses reasoning_effort directly - 'max' = Think Max mode
       ...(isDeepSeekV4 && { reasoning_effort: 'max' }),
-      // Other models with thinking toggle
-      ...(ENABLE_THINKING_MODE && !isDeepSeekV4 && {
-        chat_template_kwargs: { thinking: true }
-      })
+      ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
 
     const headers = {
@@ -106,20 +129,12 @@ module.exports = async function handler(req, res) {
               const content = data.choices[0].delta.content;
 
               let output = '';
-
               if (reasoning) {
-                if (!inReasoning) {
-                  output += '<think>';
-                  inReasoning = true;
-                }
+                if (!inReasoning) { output += '<think>'; inReasoning = true; }
                 output += reasoning;
               }
-
               if (content !== null && content !== undefined && content !== '') {
-                if (inReasoning) {
-                  output += '</think>\n\n';
-                  inReasoning = false;
-                }
+                if (inReasoning) { output += '</think>\n\n'; inReasoning = false; }
                 output += content;
               }
 
@@ -143,7 +158,7 @@ module.exports = async function handler(req, res) {
         let content = choice.message?.content || '';
         const reasoning = choice.message?.reasoning_content || '';
         if (reasoning) {
-          content = reasoning + '\n\n' + content;
+          content = '<think>\n' + reasoning + '\n</think>\n\n' + content;
         }
         return {
           index: choice.index,
