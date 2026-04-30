@@ -28,8 +28,6 @@ const MODEL_MAPPING = {
 
 // Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
 function getThinkingKwargs(nimModel) {
-  // DeepSeek V4 uses reasoning_effort instead
-  if (nimModel.includes('deepseek-v4')) return null;
 
   // GLM models
   if (nimModel.includes('glm5') || nimModel.includes('glm-5') || nimModel.includes('glm4.7') || nimModel.includes('glm-4.7')) {
