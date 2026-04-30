@@ -4,14 +4,12 @@ const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = false;
 
-// Models that require chat_template_kwargs to function at all on NVIDIA NIM
 const DEEPSEEK_V4_MODELS = [
   'deepseek-ai/deepseek-v4-pro',
   'deepseek-ai/deepseek-v4-flash'
 ];
 
 const MODEL_MAPPING = {
-  // Existing models
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
   'z-ai/glm5': 'z-ai/glm5',
@@ -25,7 +23,6 @@ const MODEL_MAPPING = {
   'mistralai/devstral-2-123b-instruct-2512': 'mistralai/devstral-2-123b-instruct-2512',
   'mistralai/mistral-large-3-675b-instruct-2512': 'mistralai/mistral-large-3-675b-instruct-2512',
   'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
-  // New models
   'deepseek-ai/deepseek-v4-pro': 'deepseek-ai/deepseek-v4-pro',
   'deepseek-ai/deepseek-v4-flash': 'deepseek-ai/deepseek-v4-flash',
   'mistralai/mistral-medium-3.5-128b': 'mistralai/mistral-medium-3.5-128b',
@@ -67,10 +64,10 @@ module.exports = async function handler(req, res) {
       temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
       stream: stream || false,
-      ...(isDeepSeekV4 && {
-        chat_template_kwargs: { enable_thinking: true, thinking: 'think_max' }
-      }),
-      ...(!isDeepSeekV4 && ENABLE_THINKING_MODE && {
+      // DeepSeek V4 uses reasoning_effort directly - 'max' = Think Max mode
+      ...(isDeepSeekV4 && { reasoning_effort: 'max' }),
+      // Other models with thinking toggle
+      ...(ENABLE_THINKING_MODE && !isDeepSeekV4 && {
         chat_template_kwargs: { thinking: true }
       })
     };
