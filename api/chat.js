@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
-const ENABLE_THINKING_MODE = true;
+const ENABLE_THINKING_MODE = false;
 
 // Models that require chat_template_kwargs to function at all on NVIDIA NIM
 const DEEPSEEK_V4_MODELS = [
@@ -67,11 +67,12 @@ module.exports = async function handler(req, res) {
       temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
       stream: stream || false,
-      extra_body: isDeepSeekV4
-        ? { chat_template_kwargs: { enable_thinking: true, thinking: 'think_max' } }
-        : ENABLE_THINKING_MODE
-          ? { chat_template_kwargs: { thinking: true } }
-          : undefined
+      ...(isDeepSeekV4 && {
+        chat_template_kwargs: { enable_thinking: true, thinking: 'think_max' }
+      }),
+      ...(!isDeepSeekV4 && ENABLE_THINKING_MODE && {
+        chat_template_kwargs: { thinking: true }
+      })
     };
 
     const headers = {
