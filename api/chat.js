@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
-const ENABLE_THINKING_MODE = true;
+const ENABLE_THINKING_MODE = false;
 
 const MODEL_MAPPING = {
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
