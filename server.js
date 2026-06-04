@@ -6,18 +6,15 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// NVIDIA NIM API configuration
 const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.com/v1';
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
 const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = true;
 
-// Model mapping — kept in sync with api/models.js and api/chat.js
 const MODEL_MAPPING = {
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
@@ -40,52 +37,31 @@ const MODEL_MAPPING = {
   'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
   'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b'
   'nvidia/nemotron-3-ultra-550b-a55b': 'nvidia/nemotron-3-ultra-550b-a55b'
-
 };
 
-// Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
 function getThinkingKwargs(nimModel) {
-  if (nimModel.includes('deepseek-v4')) {
-    return { thinking: true };
-  }
+  if (nimModel.includes('deepseek-v4')) return { thinking: true };
   if (nimModel.includes('glm5') || nimModel.includes('glm-5') || nimModel.includes('glm4.7') || nimModel.includes('glm-4.7')) {
     return { enable_thinking: true, clear_thinking: false };
   }
-  if (nimModel.includes('kimi')) {
-    return { thinking: true };
-  }
-  if (nimModel.includes('qwen3') || nimModel.includes('qwq')) {
-    return { enable_thinking: true };
-  }
-  if (nimModel.includes('deepseek-v3') || nimModel.includes('deepseek-r1')) {
-    return { thinking: true };
-  }
+  if (nimModel.includes('kimi')) return { thinking: true };
+  if (nimModel.includes('qwen3') || nimModel.includes('qwq')) return { enable_thinking: true };
+  if (nimModel.includes('deepseek-v3') || nimModel.includes('deepseek-r1')) return { thinking: true };
   if (nimModel.includes('minimax')) return null;
   return null;
 }
 
-// Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'OpenAI to NVIDIA NIM Proxy',
-    reasoning_display: SHOW_REASONING,
-    thinking_mode: ENABLE_THINKING_MODE
-  });
+  res.json({ status: 'ok', service: 'OpenAI to NVIDIA NIM Proxy', reasoning_display: SHOW_REASONING, thinking_mode: ENABLE_THINKING_MODE });
 });
 
-// List models endpoint (OpenAI compatible)
 app.get('/v1/models', (req, res) => {
   const models = Object.keys(MODEL_MAPPING).map(model => ({
-    id: model,
-    object: 'model',
-    created: Date.now(),
-    owned_by: 'nvidia-nim-proxy'
+    id: model, object: 'model', created: Date.now(), owned_by: 'nvidia-nim-proxy'
   }));
   res.json({ object: 'list', data: models });
 });
 
-// Chat completions endpoint (main proxy)
 app.post('/v1/chat/completions', async (req, res) => {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
@@ -132,6 +108,8 @@ app.post('/v1/chat/completions', async (req, res) => {
 
       let buffer = '';
       let inReasoning = false;
+      // Track whether content has self-tagged <think> so we don't double-wrap
+      let contentHasInlineThink = false;
 
       response.data.on('data', (chunk) => {
         buffer += chunk.toString();
@@ -146,18 +124,30 @@ app.post('/v1/chat/completions', async (req, res) => {
             const data = JSON.parse(line.slice(6));
             if (data.choices?.[0]?.delta) {
               const reasoning = data.choices[0].delta.reasoning_content;
-              let content = data.choices[0].delta.content;
+              const content = data.choices[0].delta.content;
+
+              // Detect if this model self-embeds <think> tags into content chunks
+              if (content && content.includes('<think>')) {
+                contentHasInlineThink = true;
+              }
 
               let output = '';
-              if (reasoning) {
-                if (!inReasoning) { output += '<think>'; inReasoning = true; }
-                output += reasoning;
-              }
-              if (content !== null && content !== undefined && content !== '') {
-                if (inReasoning) { output += '</think>\n\n'; inReasoning = false; }
-                // Strip any inline <think> blocks the model emitted inside content
-                content = content.replace(/<think>[\s\S]*?<\/think>\s*/g, '');
-                if (content) output += content;
+
+              if (contentHasInlineThink) {
+                // Model is self-tagging — pass content through as-is, ignore reasoning_content
+                if (content !== null && content !== undefined) {
+                  output = content;
+                }
+              } else {
+                // Model uses separate reasoning_content field — wrap it ourselves
+                if (reasoning) {
+                  if (!inReasoning) { output += '<think>'; inReasoning = true; }
+                  output += reasoning;
+                }
+                if (content !== null && content !== undefined && content !== '') {
+                  if (inReasoning) { output += '</think>\n\n'; inReasoning = false; }
+                  output += content;
+                }
               }
 
               data.choices[0].delta.content = output;
@@ -171,24 +161,23 @@ app.post('/v1/chat/completions', async (req, res) => {
       });
 
       response.data.on('end', () => res.end());
-      response.data.on('error', (err) => {
-        console.error('Stream error:', err);
-        res.end();
-      });
+      response.data.on('error', (err) => { console.error('Stream error:', err); res.end(); });
 
     } else {
+      // Non-streaming
       const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, { headers });
 
       const choices = response.data.choices.map(choice => {
         let content = choice.message?.content || '';
         const reasoning = choice.message?.reasoning_content || '';
 
-        // Strip inline <think> blocks from content to avoid duplication
-        content = content.replace(/<think>[\s\S]*?<\/think>\s*/g, '');
+        // If content already has inline <think> tags, don't also prepend reasoning_content
+        const contentHasInlineThink = content.includes('<think>');
 
-        if (reasoning) {
+        if (reasoning && !contentHasInlineThink) {
           content = '<think>\n' + reasoning + '\n</think>\n\n' + content;
         }
+
         return {
           index: choice.index,
           message: { role: choice.message.role, content },
@@ -209,29 +198,17 @@ app.post('/v1/chat/completions', async (req, res) => {
   } catch (error) {
     console.error('Proxy error:', error.message);
     res.status(error.response?.status || 500).json({
-      error: {
-        message: error.message || 'Internal server error',
-        type: 'invalid_request_error',
-        code: error.response?.status || 500
-      }
+      error: { message: error.message || 'Internal server error', type: 'invalid_request_error', code: error.response?.status || 500 }
     });
   }
 });
 
-// Catch-all for unsupported endpoints
 app.all('*', (req, res) => {
-  res.status(404).json({
-    error: {
-      message: `Endpoint ${req.path} not found`,
-      type: 'invalid_request_error',
-      code: 404
-    }
-  });
+  res.status(404).json({ error: { message: `Endpoint ${req.path} not found`, type: 'invalid_request_error', code: 404 } });
 });
 
 app.listen(PORT, () => {
   console.log(`OpenAI to NVIDIA NIM Proxy running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
   console.log(`Reasoning display: ${SHOW_REASONING ? 'ENABLED' : 'DISABLED'}`);
   console.log(`Thinking mode: ${ENABLE_THINKING_MODE ? 'ENABLED' : 'DISABLED'}`);
 });
