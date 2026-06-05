@@ -18,7 +18,7 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 const SHOW_REASONING = true; // Set to true to show reasoning with <think> tags
 
 // 🔥 THINKING MODE TOGGLE - Enables thinking for specific models that support it
-const ENABLE_THINKING_MODE = true; // Set to true to enable chat_template_kwargs thinking parameter
+const ENABLE_THINKING_MODE = false; // Set to true to enable chat_template_kwargs thinking parameter
 
 // Model mapping (adjust based on available NIM models)
 const MODEL_MAPPING = {
@@ -29,13 +29,20 @@ const MODEL_MAPPING = {
   'stepfun-ai/step-3.5-flash': 'stepfun-ai/step-3.5-flash',
   'moonshotai/kimi-k2.5': 'moonshotai/kimi-k2.5',
   'moonshotai/kimi-k2.6': 'moonshotai/kimi-k2.6',
-  'z-ai/glm4.7': 'z-ai/glm4.7',
+  'z-ai/glm-4.7': 'z-ai/glm-4.7',
   'deepseek-ai/deepseek-v3.2': 'deepseek-ai/deepseek-v3.2',
   'deepseek-ai/deepseek-v3.1-terminus': 'deepseek-ai/deepseek-v3.1-terminus',
   'qwen/qwen3-next-80b-a3b-instruct': 'qwen/qwen3-next-80b-a3b-instruct',
   'mistralai/devstral-2-123b-instruct-2512': 'mistralai/devstral-2-123b-instruct-2512',
   'mistralai/mistral-large-3-675b-instruct-2512': 'mistralai/mistral-large-3-675b-instruct-2512',
-  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct'
+  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
+  'deepseek-ai/deepseek-v4-pro': 'deepseek-ai/deepseek-v4-pro',
+  'deepseek-ai/deepseek-v4-flash': 'deepseek-ai/deepseek-v4-flash',
+  'mistralai/mistral-medium-3.5-128b': 'mistralai/mistral-medium-3.5-128b',
+  'z-ai/glm-5.1': 'z-ai/glm-5.1',
+  'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
+  'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b',
+  'nvidia/nemotron-3-ultra-550b-a55b': 'nvidia/nemotron-3-ultra-550b-a55b'
 };
 
 // Health check endpoint
