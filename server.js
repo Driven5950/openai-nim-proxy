@@ -24,17 +24,26 @@ const ENABLE_THINKING_MODE = false; // Set to true to enable chat_template_kwarg
 const MODEL_MAPPING = {
   'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
-  'z-ai/glm-5.1': 'z-ai/glm-5.1',
+  'z-ai/glm5': 'z-ai/glm5',
   'minimaxai/minimax-m2.1': 'minimaxai/minimax-m2.1',
   'stepfun-ai/step-3.5-flash': 'stepfun-ai/step-3.5-flash',
   'moonshotai/kimi-k2.5': 'moonshotai/kimi-k2.5',
-  'z-ai/glm4.7': 'z-ai/glm4.7',
+  'moonshotai/kimi-k2.6': 'moonshotai/kimi-k2.6',
+  'z-ai/glm-4.7': 'z-ai/glm-4.7',
   'deepseek-ai/deepseek-v3.2': 'deepseek-ai/deepseek-v3.2',
   'deepseek-ai/deepseek-v3.1-terminus': 'deepseek-ai/deepseek-v3.1-terminus',
   'qwen/qwen3-next-80b-a3b-instruct': 'qwen/qwen3-next-80b-a3b-instruct',
   'mistralai/devstral-2-123b-instruct-2512': 'mistralai/devstral-2-123b-instruct-2512',
   'mistralai/mistral-large-3-675b-instruct-2512': 'mistralai/mistral-large-3-675b-instruct-2512',
-  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct'
+  'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
+  'deepseek-ai/deepseek-v4-pro': 'deepseek-ai/deepseek-v4-pro',
+  'deepseek-ai/deepseek-v4-flash': 'deepseek-ai/deepseek-v4-flash',
+  'mistralai/mistral-medium-3.5-128b': 'mistralai/mistral-medium-3.5-128b',
+  'z-ai/glm-5.1': 'z-ai/glm-5.1',
+  'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
+  'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b',
+  'nvidia/nemotron-3-ultra-550b-a55b': 'nvidia/nemotron-3-ultra-550b-a55b',
+  'stepfun-ai/step-3.7-flash'; 'stepfun-ai/step-3.7-flash',
 };
 
 // Health check endpoint
