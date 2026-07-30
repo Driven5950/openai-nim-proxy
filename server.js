@@ -22,7 +22,7 @@ const ENABLE_THINKING_MODE = false; // Set to true to enable chat_template_kwarg
 
 // Model mapping (adjust based on available NIM models)
 const MODEL_MAPPING = {
-  'minimaxai/minimax-m2.5': 'minimaxai/minimax-m2.5',
+  'minimaxai/minimax-m3': 'minimaxai/minimax-m3',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
   'z-ai/glm5': 'z-ai/glm5',
   'minimaxai/minimax-m2.1': 'minimaxai/minimax-m2.1',
@@ -40,10 +40,12 @@ const MODEL_MAPPING = {
   'deepseek-ai/deepseek-v4-flash': 'deepseek-ai/deepseek-v4-flash',
   'mistralai/mistral-medium-3.5-128b': 'mistralai/mistral-medium-3.5-128b',
   'z-ai/glm-5.1': 'z-ai/glm-5.1',
+  'z-ai/glm-5.2': 'z-ai/glm-5.2',
   'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
   'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b',
   'nvidia/nemotron-3-ultra-550b-a55b': 'nvidia/nemotron-3-ultra-550b-a55b',
   'stepfun-ai/step-3.7-flash': 'stepfun-ai/step-3.7-flash',
+  'thinkingmachines/inkling': 'thinkingmachines/inkling',
 };
 
 // Health check endpoint
