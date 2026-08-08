@@ -24,6 +24,7 @@ const MODEL_MAPPING = {
   'nvidia/nemotron-3-ultra-550b-a55b': 'nvidia/nemotron-3-ultra-550b-a55b',
   'stepfun-ai/step-3.7-flash': 'stepfun-ai/step-3.7-flash',
   'thinkingmachines/inkling': 'thinkingmachines/inkling',
+  'deepseek-ai/deepseek-v4-flash-0731': 'deepseek-ai/deepseek-v4-flash-0731',
 };
 
 module.exports = function handler(req, res) {
