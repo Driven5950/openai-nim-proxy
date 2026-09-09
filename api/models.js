@@ -27,7 +27,7 @@ const MODEL_MAPPING = {
   'stepfun-ai/step-3.7-flash': 'stepfun-ai/step-3.7-flash',
   'thinkingmachines/inkling': 'thinkingmachines/inkling',
   'deepseek-ai/deepseek-v4-flash-0731': 'deepseek-ai/deepseek-v4-flash-0731',
-  'deepseek-ai/deepseek-v4-pro-0813': 'deepseek-ai/deepseek-v4-pro-0813'
+  'deepseek-ai/deepseek-v4-pro-0813': 'deepseek-ai/deepseek-v4-pro-0813',
   'meta/muse-glimmer-30b': 'meta/muse-glimmer-30b',
 };
 
