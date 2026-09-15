@@ -43,6 +43,7 @@ const MODEL_MAPPING = {
   'z-ai/glm-5.1': 'z-ai/glm-5.1',
   'z-ai/glm-5.2': 'z-ai/glm-5.2',
   'z-ai/glm-5.3': 'z-ai/glm-5.3',
+  'z-ai/glm-5.3-flash': 'z-ai/glm-5.3-flash',
   'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
   'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b',
   'nvidia/nemotron-3-ultra-550b-a55b': 'nvidia/nemotron-3-ultra-550b-a55b',
