@@ -39,14 +39,48 @@ const MODEL_MAPPING = {
 
 // Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
 function getThinkingKwargs(nimModel) {
-  if (nimModel.includes('deepseek-v4')) return { thinking: true };
+
+  // DeepSeek V4 — reasoning_effort is set separately, but thinking must also be enabled
+  if (nimModel.includes('deepseek-v4')) {
+    return { thinking: true };
+  }
+
+  // GLM models
   if (nimModel.includes('glm5') || nimModel.includes('glm-5') || nimModel.includes('glm4.7') || nimModel.includes('glm-4.7')) {
     return { enable_thinking: true, clear_thinking: false };
   }
-  if (nimModel.includes('kimi')) return { thinking: true };
-  if (nimModel.includes('qwen3') || nimModel.includes('qwq')) return { enable_thinking: true };
-  if (nimModel.includes('deepseek-v3') || nimModel.includes('deepseek-r1')) return { thinking: true };
+
+  // Kimi models
+  if (nimModel.includes('kimi')) {
+    return { thinking: true };
+  }
+
+  // Qwen3 models
+  if (nimModel.includes('qwen3') || nimModel.includes('qwq')) {
+    return { enable_thinking: true };
+  }
+
+  // DeepSeek V3
+  if (nimModel.includes('deepseek-v3') || nimModel.includes('deepseek-r1')) {
+    return { thinking: true };
+  }
+
+  // MiniMax uses inline <think> tags, no kwargs needed
+  if (nimModel.includes('minimax')) return null;
+
   return null;
+}
+
+// Read the real error body from NIM (streamed errors arrive as a stream)
+async function readErrorBody(error) {
+  let data = error.response?.data;
+  if (data && typeof data.on === 'function') {
+    const chunks = [];
+    for await (const c of data) chunks.push(c);
+    const text = Buffer.concat(chunks).toString();
+    try { data = JSON.parse(text); } catch { data = { message: text }; }
+  }
+  return data || { message: error.message || 'Internal server error' };
 }
 
 module.exports = async function handler(req, res) {
@@ -59,10 +93,11 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Method not allowed', type: 'invalid_request_error' } });
   }
 
+  let nimModel;
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
 
-    let nimModel = MODEL_MAPPING[model];
+    nimModel = MODEL_MAPPING[model];
     if (!nimModel) {
       const lower = (model || '').toLowerCase();
       if (lower.includes('gpt-4') || lower.includes('claude-opus') || lower.includes('405b')) {
@@ -74,35 +109,22 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Standard baseline properties across ALL models to prevent Gateway parsing drops
+    const isDeepSeekV4 = nimModel.includes('deepseek-v4');
+    const isKimiK3 = nimModel.includes('kimi-k3');
+    const thinkingKwargs = ENABLE_THINKING_MODE ? getThinkingKwargs(nimModel) : null;
+
+    // Fields go at the TOP LEVEL of the body. `extra_body` is an OpenAI Python SDK
+    // feature and is NOT unwrapped when posting with axios.
     const nimRequest = {
       model: nimModel,
       messages,
-      temperature: temperature || 0.6,
+      temperature: temperature ?? 0.6,
       max_tokens: max_tokens || 9024,
-      stream: stream || false
+      stream: stream || false,
+      ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
+      ...(isKimiK3 && { reasoning_effort: 'low' }),
+      ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
-
-    // Construct a safe extra_body block to isolate custom reasoning inputs from standard models
-    let extraBody = {};
-
-    if (nimModel.includes('deepseek-v4')) {
-      extraBody.reasoning_effort = 'high';
-    } else if (nimModel.includes('kimi-k3')) {
-      extraBody.reasoning_effort = 'low'; // Correctly target low-effort bounds for Kimi K3
-    }
-
-    if (ENABLE_THINKING_MODE) {
-      const thinkingKwargs = getThinkingKwargs(nimModel);
-      if (thinkingKwargs) {
-        extraBody.chat_template_kwargs = thinkingKwargs;
-      }
-    }
-
-    // Attach extra_body ONLY if it contains keys, preventing formatting rejections on models like Glimmer Muse
-    if (Object.keys(extraBody).length > 0) {
-      nimRequest.extra_body = extraBody;
-    }
 
     const headers = {
       'Authorization': `Bearer ${process.env.NIM_API_KEY}`,
@@ -110,14 +132,16 @@ module.exports = async function handler(req, res) {
     };
 
     if (stream) {
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-
       const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
         headers,
         responseType: 'stream'
       });
+
+      // Set SSE headers only after NIM accepted the request, so errors can
+      // still be returned as normal JSON.
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
 
       let buffer = '';
       let inReasoning = false;
@@ -133,15 +157,19 @@ module.exports = async function handler(req, res) {
 
           try {
             const data = JSON.parse(line.slice(6));
-            if (data.choices && data.choices[0] && data.choices[0].delta) {
+            if (data.choices?.[0]?.delta) {
               const delta = data.choices[0].delta;
               const reasoning = delta.reasoning_content ?? delta.reasoning ?? null;
               let content = delta.content ?? '';
 
+              // NIM quirk: content echoes the thinking text inside <think> tags.
+              // Drop content while reasoning is flowing to prevent duplication.
               if (reasoning) {
                 content = '';
               }
 
+              // Strip a pre-wrapped <think>...</think> block NIM sometimes
+              // injects into the first content chunk after reasoning ends.
               if (!reasoning && inReasoning && content.startsWith('<think>')) {
                 content = content.replace(/^<think>[\s\S]*?<\/think>\s*/, '');
               }
@@ -197,12 +225,13 @@ module.exports = async function handler(req, res) {
     }
   } catch (error) {
     const status = error.response?.status || 500;
-    const errorData = error.response?.data || { message: error.message || 'Internal server error' };
+    const errorData = await readErrorBody(error);
+    console.error('NIM error', status, nimModel, JSON.stringify(errorData));
     res.status(status).json({
-      error: { 
-        message: errorData.error?.message || errorData.message || 'Internal server error', 
-        type: 'invalid_request_error', 
-        code: status 
+      error: {
+        message: errorData.error?.message || errorData.detail || errorData.message || error.message || 'Internal server error',
+        type: 'invalid_request_error',
+        code: status
       }
     });
   }
