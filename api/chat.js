@@ -35,7 +35,7 @@ const MODEL_MAPPING = {
   'deepseek-ai/deepseek-v4-flash-0731': 'deepseek-ai/deepseek-v4-flash-0731',
   'deepseek-ai/deepseek-v4-pro-0813': 'deepseek-ai/deepseek-v4-pro-0813',
   'meta/muse-glimmer-30b': 'meta/muse-glimmer-30b',
-};
+  };
 
 // Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
 function getThinkingKwargs(nimModel) {
@@ -71,18 +71,6 @@ function getThinkingKwargs(nimModel) {
   return null;
 }
 
-// Read the real error body from NIM (streamed errors arrive as a stream)
-async function readErrorBody(error) {
-  let data = error.response?.data;
-  if (data && typeof data.on === 'function') {
-    const chunks = [];
-    for await (const c of data) chunks.push(c);
-    const text = Buffer.concat(chunks).toString();
-    try { data = JSON.parse(text); } catch { data = { message: text }; }
-  }
-  return data || { message: error.message || 'Internal server error' };
-}
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -93,11 +81,10 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Method not allowed', type: 'invalid_request_error' } });
   }
 
-  let nimModel;
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
 
-    nimModel = MODEL_MAPPING[model];
+    let nimModel = MODEL_MAPPING[model];
     if (!nimModel) {
       const lower = (model || '').toLowerCase();
       if (lower.includes('gpt-4') || lower.includes('claude-opus') || lower.includes('405b')) {
@@ -110,19 +97,15 @@ module.exports = async function handler(req, res) {
     }
 
     const isDeepSeekV4 = nimModel.includes('deepseek-v4');
-    const isKimiK3 = nimModel.includes('kimi-k3');
     const thinkingKwargs = ENABLE_THINKING_MODE ? getThinkingKwargs(nimModel) : null;
 
-    // Fields go at the TOP LEVEL of the body. `extra_body` is an OpenAI Python SDK
-    // feature and is NOT unwrapped when posting with axios.
     const nimRequest = {
       model: nimModel,
       messages,
-      temperature: temperature ?? 0.6,
+      temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
       stream: stream || false,
       ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
-      ...(isKimiK3 && { reasoning_effort: 'low' }),
       ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
 
@@ -132,16 +115,14 @@ module.exports = async function handler(req, res) {
     };
 
     if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
       const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
         headers,
         responseType: 'stream'
       });
-
-      // Set SSE headers only after NIM accepted the request, so errors can
-      // still be returned as normal JSON.
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
 
       let buffer = '';
       let inReasoning = false;
@@ -225,14 +206,8 @@ module.exports = async function handler(req, res) {
     }
   } catch (error) {
     const status = error.response?.status || 500;
-    const errorData = await readErrorBody(error);
-    console.error('NIM error', status, nimModel, JSON.stringify(errorData));
     res.status(status).json({
-      error: {
-        message: errorData.error?.message || errorData.detail || errorData.message || error.message || 'Internal server error',
-        type: 'invalid_request_error',
-        code: status
-      }
+      error: { message: error.message || 'Internal server error', type: 'invalid_request_error', code: status }
     });
   }
 }
