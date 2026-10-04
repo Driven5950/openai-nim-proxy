@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const NIM_API_BASE = 'https://nvidia.com';
+const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = true;
 
@@ -145,7 +145,7 @@ module.exports = async function handler(req, res) {
 
           try {
             const data = JSON.parse(line.slice(6));
-            if (data.choices?.[0]?.delta) {
+            if (data.choices && data.choices[0] && data.choices[0].delta) {
               const delta = data.choices[0].delta;
               const reasoning = delta.reasoning_content ?? delta.reasoning ?? null;
               let content = delta.content ?? '';
