@@ -50,12 +50,7 @@ function getThinkingKwargs(nimModel) {
     return { enable_thinking: true, clear_thinking: false };
   }
 
-  // Kimi K3 explicitly turns off thinking template tags to kill CoT formatting
-  if (nimModel.includes('kimi-k3')) {
-    return { thinking: false };
-  }
-
-  // Older Kimi models
+  // Kimi models
   if (nimModel.includes('kimi')) {
     return { thinking: true };
   }
@@ -112,7 +107,7 @@ module.exports = async function handler(req, res) {
       max_tokens: max_tokens || 9024,
       stream: stream || false,
       ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
-      ...(isKimiK3 && { reasoning_effort: 'low' }), // Force Kimi K3 to drop reasoning to minimum levels
+      ...(isKimiK3 && { reasoning_effort: 'low' }), // Tell NIM to minimize Kimi K3's active thinking passes
       ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
 
@@ -150,43 +145,29 @@ module.exports = async function handler(req, res) {
               const reasoning = delta.reasoning_content ?? delta.reasoning ?? null;
               let content = delta.content ?? '';
 
-              // If model is Kimi K3, drop and hide all reasoning chunks completely
-              if (isKimiK3) {
-                if (reasoning) return; // Drop token stream iteration
-                
-                // If it pushes inline <think> tags down the generic content path anyway, strip them out entirely
-                if (content.includes('<think>') || inReasoning) {
-                  inReasoning = true;
-                  if (content.includes('</think>')) {
-                    content = content.split('</think>')[1] || '';
-                    inReasoning = false;
-                  } else {
-                    return; // Toss content chunk out while inside inline <think> bounds
-                  }
-                }
-              } else {
-                // Default fallback tracking behavior for all other reasoning architectures
-                if (reasoning) {
-                  content = '';
-                }
-
-                if (!reasoning && inReasoning && content.startsWith('<think>')) {
-                  content = content.replace(/^<think>[\s\S]*?<\/think>\s*/, '');
-                }
-
-                let output = '';
-                if (reasoning) {
-                  if (!inReasoning) { output += '<think>'; inReasoning = true; }
-                  output += reasoning;
-                }
-                if (content !== '') {
-                  if (inReasoning) { output += '</think>\n\n'; inReasoning = false; }
-                  output += content;
-                }
-                content = output;
+              // NIM quirk: content echoes the thinking text inside <think> tags.
+              // Drop content while reasoning is flowing to prevent duplication.
+              if (reasoning) {
+                content = '';
               }
 
-              delta.content = content;
+              // Strip a pre-wrapped <think>...</think> block NIM sometimes
+              // injects into the first content chunk after reasoning ends.
+              if (!reasoning && inReasoning && content.startsWith('<think>')) {
+                content = content.replace(/^<think>[\s\S]*?<\/think>\s*/, '');
+              }
+
+              let output = '';
+              if (reasoning) {
+                if (!inReasoning) { output += '<think>'; inReasoning = true; }
+                output += reasoning;
+              }
+              if (content !== '') {
+                if (inReasoning) { output += '</think>\n\n'; inReasoning = false; }
+                output += content;
+              }
+
+              delta.content = output;
               delete delta.reasoning_content;
               delete delta.reasoning;
             }
@@ -206,14 +187,9 @@ module.exports = async function handler(req, res) {
       const choices = response.data.choices.map(choice => {
         let content = choice.message?.content || '';
         const reasoning = choice.message?.reasoning_content || '';
-        
-        // Hide reasoning structures on Kimi K3 unary outputs
-        if (isKimiK3) {
-          content = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        } else if (reasoning) {
+        if (reasoning) {
           content = '<think>\n' + reasoning + '\n</think>\n\n' + content;
         }
-        
         return {
           index: choice.index,
           message: { role: choice.message.role, content },
