@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
+const NIM_API_BASE = 'https://nvidia.com';
 const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = true;
 
@@ -39,31 +39,21 @@ const MODEL_MAPPING = {
 
 // Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
 function getThinkingKwargs(nimModel) {
-  // DeepSeek V4 — reasoning_effort is set separately, but thinking must also be enabled
   if (nimModel.includes('deepseek-v4')) {
     return { thinking: true };
   }
-
-  // GLM models
   if (nimModel.includes('glm5') || nimModel.includes('glm-5') || nimModel.includes('glm4.7') || nimModel.includes('glm-4.7')) {
     return { enable_thinking: true, clear_thinking: false };
   }
-
-  // Kimi models
   if (nimModel.includes('kimi')) {
     return { thinking: true };
   }
-
-  // Qwen3 models
   if (nimModel.includes('qwen3') || nimModel.includes('qwq')) {
     return { enable_thinking: true };
   }
-
-  // DeepSeek V3
   if (nimModel.includes('deepseek-v3') || nimModel.includes('deepseek-r1')) {
     return { thinking: true };
   }
-
   return null;
 }
 
@@ -92,11 +82,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    const isDeepSeekV4 = nimModel.includes('deepseek-v4');
-    const isKimiK3 = nimModel.includes('kimi-k3');
-    const thinkingKwargs = ENABLE_THINKING_MODE ? getThinkingKwargs(nimModel) : null;
-
-    // Base request properties accepted universally by all NIM models
+    // Initialize clean payload
     const nimRequest = {
       model: nimModel,
       messages,
@@ -105,15 +91,23 @@ module.exports = async function handler(req, res) {
       stream: stream || false
     };
 
-    // Safely inject parameters only into models that accept them
-    if (isDeepSeekV4) {
+    // FIX: Apply parameters ONLY to specific supported model families to eliminate upstream 404 crashes
+    if (nimModel.includes('deepseek-v4')) {
       nimRequest.reasoning_effort = 'high';
-    } else if (isKimiK3) {
-      nimRequest.reasoning_effort = 'low'; // Keep Kimi reasoning depth minimized
+    } 
+    
+    // FIX: Kimi architectures on NVIDIA NIM expect thinking manipulation toggled inside 'extra_body'
+    if (nimModel.includes('kimi-k3')) {
+      nimRequest.extra_body = {
+        thinking: { type: "disabled" }
+      };
     }
 
-    if (thinkingKwargs) {
-      nimRequest.chat_template_kwargs = thinkingKwargs;
+    if (ENABLE_THINKING_MODE) {
+      const thinkingKwargs = getThinkingKwargs(nimModel);
+      if (thinkingKwargs) {
+        nimRequest.chat_template_kwargs = thinkingKwargs;
+      }
     }
 
     const headers = {
