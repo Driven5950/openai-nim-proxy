@@ -107,7 +107,7 @@ module.exports = async function handler(req, res) {
       max_tokens: max_tokens || 9024,
       stream: stream || false,
       ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
-      ...(isKimiK3 && { reasoning_effort: 'low' }), 
+      ...(isKimiK3 && { reasoning_effort: 'low' }), // Tell NIM to minimize Kimi K3's computation depth
       ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
 
@@ -140,6 +140,7 @@ module.exports = async function handler(req, res) {
 
           try {
             const data = JSON.parse(line.slice(6));
+            // FIXED: Correctly added the index indicator back [0] to match OpenAI streaming payloads
             if (data.choices && data.choices[0] && data.choices[0].delta) {
               const delta = data.choices[0].delta;
               const reasoning = delta.reasoning_content ?? delta.reasoning ?? null;
