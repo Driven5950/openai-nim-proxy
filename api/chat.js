@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const NIM_API_BASE = 'https://nvidia.com';
+const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = true;
 
@@ -39,7 +39,6 @@ const MODEL_MAPPING = {
 
 // Per-model chat_template_kwargs for enabling thinking on NVIDIA NIM
 function getThinkingKwargs(nimModel) {
-
   // DeepSeek V4 — reasoning_effort is set separately, but thinking must also be enabled
   if (nimModel.includes('deepseek-v4')) {
     return { thinking: true };
@@ -64,9 +63,6 @@ function getThinkingKwargs(nimModel) {
   if (nimModel.includes('deepseek-v3') || nimModel.includes('deepseek-r1')) {
     return { thinking: true };
   }
-
-  // MiniMax uses inline <think> tags, no kwargs needed
-  if (nimModel.includes('minimax')) return null;
 
   return null;
 }
@@ -100,16 +96,25 @@ module.exports = async function handler(req, res) {
     const isKimiK3 = nimModel.includes('kimi-k3');
     const thinkingKwargs = ENABLE_THINKING_MODE ? getThinkingKwargs(nimModel) : null;
 
+    // Base request properties accepted universally by all NIM models
     const nimRequest = {
       model: nimModel,
       messages,
       temperature: temperature || 0.6,
       max_tokens: max_tokens || 9024,
-      stream: stream || false,
-      ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
-      ...(isKimiK3 && { reasoning_effort: 'low' }), // Tell NIM to minimize Kimi K3's computation depth
-      ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
+      stream: stream || false
     };
+
+    // Safely inject parameters only into models that accept them
+    if (isDeepSeekV4) {
+      nimRequest.reasoning_effort = 'high';
+    } else if (isKimiK3) {
+      nimRequest.reasoning_effort = 'low'; // Keep Kimi reasoning depth minimized
+    }
+
+    if (thinkingKwargs) {
+      nimRequest.chat_template_kwargs = thinkingKwargs;
+    }
 
     const headers = {
       'Authorization': `Bearer ${process.env.NIM_API_KEY}`,
@@ -140,20 +145,15 @@ module.exports = async function handler(req, res) {
 
           try {
             const data = JSON.parse(line.slice(6));
-            // FIXED: Correctly added the index indicator back [0] to match OpenAI streaming payloads
             if (data.choices && data.choices[0] && data.choices[0].delta) {
               const delta = data.choices[0].delta;
               const reasoning = delta.reasoning_content ?? delta.reasoning ?? null;
               let content = delta.content ?? '';
 
-              // NIM quirk: content echoes the thinking text inside <think> tags.
-              // Drop content while reasoning is flowing to prevent duplication.
               if (reasoning) {
                 content = '';
               }
 
-              // Strip a pre-wrapped <think>...</think> block NIM sometimes
-              // injects into the first content chunk after reasoning ends.
               if (!reasoning && inReasoning && content.startsWith('<think>')) {
                 content = content.replace(/^<think>[\s\S]*?<\/think>\s*/, '');
               }
@@ -209,8 +209,13 @@ module.exports = async function handler(req, res) {
     }
   } catch (error) {
     const status = error.response?.status || 500;
+    const errorData = error.response?.data || { message: error.message || 'Internal server error' };
     res.status(status).json({
-      error: { message: error.message || 'Internal server error', type: 'invalid_request_error', code: status }
+      error: { 
+        message: errorData.error?.message || errorData.message || 'Internal server error', 
+        type: 'invalid_request_error', 
+        code: status 
+      }
     });
   }
 }
