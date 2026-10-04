@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
+const NIM_API_BASE = 'https://nvidia.com';
 const SHOW_REASONING = true;
 const ENABLE_THINKING_MODE = true;
 
@@ -107,7 +107,7 @@ module.exports = async function handler(req, res) {
       max_tokens: max_tokens || 9024,
       stream: stream || false,
       ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
-      ...(isKimiK3 && { reasoning_effort: 'low' }), // Tell NIM to minimize Kimi K3's active thinking passes
+      ...(isKimiK3 && { reasoning_effort: 'low' }), 
       ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
 
