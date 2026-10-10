@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { StringDecoder } = require('string_decoder');
 
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const SHOW_REASONING = true;
@@ -144,10 +145,12 @@ module.exports = async function handler(req, res) {
       res.setHeader('Connection', 'keep-alive');
 
       let buffer = '';
+      // Decode UTF-8 safely across chunk boundaries (multibyte chars can be split between chunks)
+      const decoder = new StringDecoder('utf8');
       let inReasoning = false;
 
       response.data.on('data', (chunk) => {
-        buffer += chunk.toString();
+        buffer += decoder.write(chunk);
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
 
