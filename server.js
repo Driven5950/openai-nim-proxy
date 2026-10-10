@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const { StringDecoder } = require('string_decoder');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -140,10 +141,12 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
       
       let buffer = '';
+      // Decode UTF-8 safely across chunk boundaries (multibyte chars can be split between chunks)
+      const decoder = new StringDecoder('utf8');
       let reasoningStarted = false;
       
       response.data.on('data', (chunk) => {
-        buffer += chunk.toString();
+        buffer += decoder.write(chunk);
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
         
