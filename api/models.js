@@ -31,7 +31,7 @@ const MODEL_MAPPING = {
   'deepseek-ai/deepseek-v4-flash-0731': 'deepseek-ai/deepseek-v4-flash-0731',
   'deepseek-ai/deepseek-v4-pro-0813': 'deepseek-ai/deepseek-v4-pro-0813',
   'meta/muse-glimmer-30b': 'meta/muse-glimmer-30b',
-  'stepfun-ai/Step 5 Preview': 'stepfun-ai/Step 5 Preview',
+  'stepfun-ai/step-5-preview': 'stepfun-ai/step-5-preview',
 };
 
 module.exports = function handler(req, res) {
