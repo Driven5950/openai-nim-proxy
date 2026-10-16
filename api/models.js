@@ -25,11 +25,13 @@ const MODEL_MAPPING = {
   'qwen/qwen3.5-122b-a10b': 'qwen/qwen3.5-122b-a10b',
   'nvidia/nemotron-3-super-120b-a12b': 'nvidia/nemotron-3-super-120b-a12b',
   'nvidia/nemotron-3-ultra-550b-a55b': 'nvidia/nemotron-3-ultra-550b-a55b',
+  'nvidia/nemotron-3.5-super-vl-120b-a12b': 'nvidia/nemotron-3.5-super-vl-120b-a12b',
   'stepfun-ai/step-3.7-flash': 'stepfun-ai/step-3.7-flash',
   'thinkingmachines/inkling': 'thinkingmachines/inkling',
   'deepseek-ai/deepseek-v4-flash-0731': 'deepseek-ai/deepseek-v4-flash-0731',
   'deepseek-ai/deepseek-v4-pro-0813': 'deepseek-ai/deepseek-v4-pro-0813',
   'meta/muse-glimmer-30b': 'meta/muse-glimmer-30b',
+  'stepfun-ai/Step 5 Preview': 'stepfun-ai/Step 5 Preview',
 };
 
 module.exports = function handler(req, res) {
