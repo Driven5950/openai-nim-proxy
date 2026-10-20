@@ -114,6 +114,7 @@ module.exports = async function handler(req, res) {
 
     const isDeepSeekV4 = nimModel.includes('deepseek-v4');
     const isKimiK3 = nimModel.includes('kimi-k3');
+    const isStep5 = nimModel.includes('step-5');
     const thinkingKwargs = ENABLE_THINKING_MODE ? getThinkingKwargs(nimModel) : null;
 
     // Fields go at the TOP LEVEL of the body. `extra_body` is an OpenAI Python SDK
@@ -126,6 +127,7 @@ module.exports = async function handler(req, res) {
       stream: stream || false,
       ...(isDeepSeekV4 && { reasoning_effort: 'high' }),
       ...(isKimiK3 && { reasoning_effort: 'low' }),
+      ...(isStep5 && { reasoning_effort: 'low' }),
       ...(thinkingKwargs && { chat_template_kwargs: thinkingKwargs })
     };
 
