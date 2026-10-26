@@ -26,7 +26,7 @@ const MODEL_MAPPING = {
   'minimaxai/minimax-m3': 'minimaxai/minimax-m3',
   'qwen/qwen3.5-397b-a17b': 'qwen/qwen3.5-397b-a17b',
   'z-ai/glm5': 'z-ai/glm5',
-  'minimaxai/minimax-m2.1': 'minimaxai/minimax-m2.1',
+  'minimaxai/minimax-m3.1-flash': 'minimaxai/minimax-m3.1-flash',
   'stepfun-ai/step-3.5-flash': 'stepfun-ai/step-3.5-flash',
   'moonshotai/kimi-k2.5': 'moonshotai/kimi-k2.5',
   'moonshotai/kimi-k2.6': 'moonshotai/kimi-k2.6',
