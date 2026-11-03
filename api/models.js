@@ -14,6 +14,7 @@ const MODEL_MAPPING = {
   'qwen/qwen3-next-80b-a3b-instruct': 'qwen/qwen3-next-80b-a3b-instruct',
   'mistralai/devstral-2-123b-instruct-2512': 'mistralai/devstral-2-123b-instruct-2512',
   'mistralai/mistral-large-3-675b-instruct-2512': 'mistralai/mistral-large-3-675b-instruct-2512',
+  'mistralai/mistral-large-4-1t-a52b':'mistralai/mistral-large-4-1t-a52b',
   'qwen/qwen3-coder-480b-a35b-instruct': 'qwen/qwen3-coder-480b-a35b-instruct',
   'deepseek-ai/deepseek-v4-pro': 'deepseek-ai/deepseek-v4-pro',
   'deepseek-ai/deepseek-v4.1-flash': 'deepseek-ai/deepseek-v4.1-flash',
