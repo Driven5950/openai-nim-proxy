@@ -31,6 +31,7 @@ const MODEL_MAPPING = {
   'moonshotai/kimi-k2.5': 'moonshotai/kimi-k2.5',
   'moonshotai/kimi-k2.6': 'moonshotai/kimi-k2.6',
   'moonshotai/kimi-k3': 'moonshotai/kimi-k3',
+  'moonshotai/kimi-k3.1-pro': 'moonshotai/kimi-k3.1-pro',
   'z-ai/glm-4.7': 'z-ai/glm-4.7',
   'deepseek-ai/deepseek-v3.2': 'deepseek-ai/deepseek-v3.2',
   'deepseek-ai/deepseek-v3.1-terminus': 'deepseek-ai/deepseek-v3.1-terminus',
